@@ -51,6 +51,8 @@ const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  // Suppliers filtered according to the entered product name
+  const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -144,8 +146,10 @@ const Products = () => {
           setCategories(categoryData);
         }
         
-        // Set suppliers without creating defaults
-        setSuppliers(supplierData);
+  // Set suppliers without creating defaults
+  setSuppliers(supplierData);
+  // Initialize filtered suppliers to the full list
+  setFilteredSuppliers(supplierData);
         
         setProducts(productData);
         
@@ -171,6 +175,49 @@ const Products = () => {
     
     initializeData();
   }, []);
+
+  // Compute filtered suppliers based on the product name that the user types.
+  useEffect(() => {
+    const name = (formData.name || '').trim().toLowerCase();
+
+    if (!name) {
+      setFilteredSuppliers(suppliers);
+      return;
+    }
+
+    const matchingSupplierIds = new Set<string>();
+    const normalizedName = name;
+
+    products.forEach(p => {
+      if (!p.name) return;
+      const productName = String(p.name).trim().toLowerCase();
+
+      // Accept exact, contains, or reverse contains matches for flexibility
+      if (
+        productName === normalizedName ||
+        productName.includes(normalizedName) ||
+        normalizedName.includes(productName)
+      ) {
+        const sid = p.supplierId && typeof p.supplierId === 'object'
+          ? (p.supplierId._id || p.supplierId.id || '')
+          : p.supplierId || '';
+        if (sid) matchingSupplierIds.add(String(sid));
+      }
+    });
+
+    if (matchingSupplierIds.size > 0) {
+      const filtered = suppliers.filter(s => matchingSupplierIds.has(s._id));
+      setFilteredSuppliers(filtered);
+
+      // If exactly one supplier matches, auto-select it for convenience
+      if (filtered.length === 1) {
+        setFormData(prev => ({ ...prev, supplierId: filtered[0]._id }));
+      }
+    } else {
+      // No matches found in existing products -> show all suppliers
+      setFilteredSuppliers(suppliers);
+    }
+  }, [formData.name, suppliers, products]);
 
   const fetchProducts = async () => {
     try {
@@ -563,11 +610,17 @@ const Products = () => {
               onChange={handleSelectChange}
               error={formData.supplierId === ''}
             >
-              {suppliers.map(supplier => (
-                <MenuItem key={supplier._id} value={supplier._id}>
-                  {supplier.supplier_name}
+              {filteredSuppliers.length === 0 ? (
+                <MenuItem value="" disabled>
+                  No suppliers available
                 </MenuItem>
-              ))}
+              ) : (
+                filteredSuppliers.map(supplier => (
+                  <MenuItem key={supplier._id} value={supplier._id}>
+                    {supplier.supplier_name}
+                  </MenuItem>
+                ))
+              )}
             </Select>
             {formData.supplierId === '' && (
               <FormHelperText error>Supplier is required</FormHelperText>
