@@ -52,6 +52,7 @@ const Purchases = () => {
   const [purchases, setPurchases] = useState<ExtendedPurchase[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
   
   // Ref to store active timeout IDs for cleanup
   const activeTimeouts = useRef<{[key: string]: number}>({});
@@ -96,6 +97,7 @@ const Purchases = () => {
       setPurchases(purchasesData);
       setProducts(productsData);
       setSuppliers(suppliersData);
+  setFilteredSuppliers(suppliersData);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching purchases data:', error);
@@ -202,6 +204,50 @@ const Purchases = () => {
       });
     }
   };
+
+  // Recompute filteredSuppliers whenever selected product, products list, or suppliers list changes
+  useEffect(() => {
+    const productId = formData.productId;
+
+    if (!productId) {
+      setFilteredSuppliers(suppliers);
+      return;
+    }
+
+    // Find product by id and then find suppliers that have supplied the same product name
+    const selectedProduct = products.find(p => p.id === productId);
+    if (!selectedProduct) {
+      setFilteredSuppliers(suppliers);
+      return;
+    }
+
+    const productName = (selectedProduct.name || '').trim().toLowerCase();
+    const matchingSupplierIds = new Set<string>();
+
+    products.forEach(p => {
+      if (!p.name) return;
+      const pn = String(p.name).trim().toLowerCase();
+      if (pn === productName || pn.includes(productName) || productName.includes(pn)) {
+        const supplierField: any = (p as any).supplierId;
+        const sid = supplierField && typeof supplierField === 'object'
+          ? (supplierField._id || supplierField.id || '')
+          : (supplierField || '');
+        if (sid) matchingSupplierIds.add(String(sid));
+      }
+    });
+
+    if (matchingSupplierIds.size > 0) {
+      const filtered = suppliers.filter(s => matchingSupplierIds.has(s.id));
+      setFilteredSuppliers(filtered);
+
+      // Auto-select when exactly one supplier matches and user hasn't chosen another
+      if (filtered.length === 1) {
+        setFormData(prev => ({ ...prev, supplierId: filtered[0].id, supplierName: filtered[0].name }));
+      }
+    } else {
+      setFilteredSuppliers(suppliers);
+    }
+  }, [formData.productId, products, suppliers]);
   
   const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -606,7 +652,7 @@ const Purchases = () => {
               <MenuItem value="">
                 <em>Select a supplier</em>
               </MenuItem>
-              {suppliers.map((supplier) => (
+              {filteredSuppliers.map((supplier) => (
                 <MenuItem key={supplier.id} value={supplier.id}>
                   {supplier.name || supplier.supplier_name || "Unknown supplier"}
                 </MenuItem>
