@@ -214,7 +214,26 @@ const Purchases = () => {
       return;
     }
 
-    // Find product by id and then find suppliers that have supplied the same product name
+    // Prefer purchase history: find suppliers who have supplied this product before
+    const matchingSupplierIds = new Set<string>();
+
+    purchases.forEach(pur => {
+      if (!pur.productId) return;
+      if (pur.productId === productId && pur.supplierId) {
+        matchingSupplierIds.add(String(pur.supplierId));
+      }
+    });
+
+    if (matchingSupplierIds.size > 0) {
+      const filtered = suppliers.filter(s => matchingSupplierIds.has(s.id));
+      setFilteredSuppliers(filtered);
+      if (filtered.length === 1) {
+        setFormData(prev => ({ ...prev, supplierId: filtered[0].id, supplierName: filtered[0].name }));
+      }
+      return;
+    }
+
+    // Fallback: try matching by product name across products (less reliable)
     const selectedProduct = products.find(p => p.id === productId);
     if (!selectedProduct) {
       setFilteredSuppliers(suppliers);
@@ -222,8 +241,6 @@ const Purchases = () => {
     }
 
     const productName = (selectedProduct.name || '').trim().toLowerCase();
-    const matchingSupplierIds = new Set<string>();
-
     products.forEach(p => {
       if (!p.name) return;
       const pn = String(p.name).trim().toLowerCase();
@@ -239,8 +256,6 @@ const Purchases = () => {
     if (matchingSupplierIds.size > 0) {
       const filtered = suppliers.filter(s => matchingSupplierIds.has(s.id));
       setFilteredSuppliers(filtered);
-
-      // Auto-select when exactly one supplier matches and user hasn't chosen another
       if (filtered.length === 1) {
         setFormData(prev => ({ ...prev, supplierId: filtered[0].id, supplierName: filtered[0].name }));
       }
