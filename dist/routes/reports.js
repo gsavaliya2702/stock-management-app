@@ -110,20 +110,13 @@ router.get('/supplier-performance', async (req, res) => {
 // Note: expiryDate feature removed for simplicity
 router.get('/near-expiry', async (req, res) => {
     try {
-        const today = new Date();
-        const threeDaysLater = new Date();
-        threeDaysLater.setDate(today.getDate() + 3);
-
-        // Fetch products expiring today or in the next 3 days
-        const products = await Product_1.default.find({
-            expiryDate: { $gte: today, $lte: threeDaysLater }
-        }).populate('categoryId', 'category_name');;
-
-        res.json(products);
-    } catch (error) {
+        // In a real implementation, this would find products that expire within 3 days
+        // For now, return empty array since expiryDate is not implemented
+        res.json([]);
+    }
+    catch (error) {
         console.error('Error fetching near expiry products:', error);
         res.status(500).json({ message: error.message });
     }
 });
-
 exports.default = router;

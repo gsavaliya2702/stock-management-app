@@ -167,7 +167,7 @@ const Suppliers = () => {
                   <TableCell>Supplier Name</TableCell>
                   <TableCell>Contact Info</TableCell>
                   <TableCell>Performance Score</TableCell>
-                  <TableCell>Delivery Speed (Avg)</TableCell>
+                  <TableCell>Delivery Time (Avg)</TableCell>
                   <TableCell>Quality Rating (Avg)</TableCell>
                   <TableCell>Reliability</TableCell>
                   <TableCell>Total Deliveries</TableCell>

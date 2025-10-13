@@ -198,9 +198,13 @@ const Products = () => {
         productName.includes(normalizedName) ||
         normalizedName.includes(productName)
       ) {
-        const sid = p.supplierId && typeof p.supplierId === 'object'
-          ? (p.supplierId._id || p.supplierId.id || '')
-          : p.supplierId || '';
+        // supplierId in Product is typed as string, but backend may populate it as an object.
+        // Cast to any to safely handle both cases without TypeScript errors.
+        const supplierField: any = (p as any).supplierId;
+        const sid = supplierField && typeof supplierField === 'object'
+          ? (supplierField._id || supplierField.id || '')
+          : (supplierField || '');
+
         if (sid) matchingSupplierIds.add(String(sid));
       }
     });

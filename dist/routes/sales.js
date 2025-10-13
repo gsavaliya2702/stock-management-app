@@ -19,22 +19,18 @@ router.get('/', async (req, res) => {
             .populate('customer_id', 'customer_name');
         // Map stock-out records to match sales format for frontend compatibility
         const mappedStockOuts = stockOuts.map(stockOut => {
-            // Get product and customer details (may be populated docs or ObjectIds)
+            // Get product details
             const product = stockOut.product_id;
             const customer = stockOut.customer_id;
-            // Safely compute fields in case population failed or references are missing
-            const pricePerUnit = product && typeof product === 'object' ? (product.pricePerUnit || 0) : 0;
-            const totalPrice = pricePerUnit * stockOut.quantity;
-            const productName = product && typeof product === 'object' && product.name ? product.name : 'Unknown';
-            const productId = product && typeof product === 'object' && product._id ? product._id : stockOut.product_id;
-            const customerName = customer && typeof customer === 'object' && customer.customer_name ? customer.customer_name : 'N/A';
+            // Calculate price based on product price
+            const totalPrice = (product.pricePerUnit || 0) * stockOut.quantity;
             return {
                 _id: stockOut._id,
-                productId: productId,
-                productName: productName,
+                productId: stockOut.product_id,
+                productName: product.name,
                 quantity: stockOut.quantity,
                 totalPrice: totalPrice,
-                customerName: customerName,
+                customerName: customer.customer_name,
                 discountApplied: 0,
                 date: stockOut.date_dispatched
             };
